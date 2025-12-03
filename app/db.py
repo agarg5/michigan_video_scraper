@@ -10,6 +10,7 @@ Base = declarative_base()
 class Video(Base):
     __tablename__ = "videos"
     id = Column(String, primary_key=True)
+    name = Column(String)  # e.g. "House 2025-03-06"
     source = Column(String)
     url = Column(String)
     date = Column(DateTime)

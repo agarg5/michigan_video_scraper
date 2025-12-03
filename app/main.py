@@ -38,15 +38,24 @@ def process_video(item):
             if existing:
                 return
 
+            # Human-readable name including category and date, e.g.
+            # "Judiciary Committee (House 2025-03-06)"
+            date = item["date"]
+            date_str = date.strftime("%Y-%m-%d")
+            category = item.get("category")
+            base_label = f"{item['source'].capitalize()} {date_str}"
+            name = f"{category} ({base_label})" if category else base_label
+
             download_mp4(item["url"], mp4_path)
             convert_to_mp3(mp4_path, mp3_path)
             text = transcribe(mp3_path)
 
             v = Video(
                 id=video_id,
+                name=name,
                 source=item["source"],
                 url=item["url"],
-                date=item["date"],
+                date=date,
                 transcript=text,
                 processed_at=datetime.utcnow(),
             )

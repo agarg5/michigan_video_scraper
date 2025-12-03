@@ -36,11 +36,15 @@ def run_test():
 
     # Save to DB
     db = SessionLocal()
+    date = datetime.utcnow()
+    name = f"{SOURCE.capitalize()} {date.strftime('%Y-%m-%d')}"
+
     video = Video(
         id=video_id,
+        name=name,
         source=SOURCE,
         url=TEST_VIDEO_URL,
-        date=datetime.utcnow(),
+        date=date,
         transcript=transcript_text,
         processed_at=datetime.utcnow(),
     )

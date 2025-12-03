@@ -75,15 +75,24 @@ def parse_house():
         # Heuristic 1: a preceding span.date
         date_tag = vid.find_previous("span", class_="date")
 
+        category = None
+
         # Heuristic 2: a sibling/parent cell with date-like text
         if not date_tag:
             parent_row = vid.find_parent("tr")
             if parent_row:
+                cells = parent_row.find_all(["td", "th"])
                 # Look for any cell that might contain a date.
-                for cell in parent_row.find_all(["td", "th"]):
+                for cell in cells:
                     text = cell.get_text(strip=True)
                     if any(ch.isdigit() for ch in text):
                         date_tag = cell
+                        break
+                # Use the first non-empty, non-date cell as a simple "category"
+                for cell in cells:
+                    text = cell.get_text(strip=True)
+                    if text and cell is not date_tag:
+                        category = text
                         break
 
         if date_tag:
@@ -96,7 +105,15 @@ def parse_house():
                     continue
 
         if date >= cutoff:
-            items.append({"source": "house", "url": url, "date": date})
+            items.append(
+                {
+                    "source": "house",
+                    "url": url,
+                    "raw_url": raw_url,
+                    "category": category,
+                    "date": date,
+                }
+            )
             seen_urls.add(url)
 
     return items
