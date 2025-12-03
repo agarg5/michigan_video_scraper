@@ -9,7 +9,7 @@ from app.db import SessionLocal, Video, init_db
 from app.config import DATA_DIR
 
 # Hardcoded test video
-TEST_VIDEO_URL = "https://www.house.mi.gov/ArchiveVideoFiles/CORR-030625.mp4"
+TEST_VIDEO_URL = "https://cdn.pixabay.com/video/2015/08/09/180-135788610_large.mp4"
 SOURCE = "house"
 
 
