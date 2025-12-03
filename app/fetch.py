@@ -42,31 +42,23 @@ def _normalize_house_url(raw: str) -> str:
     return raw
 
 
-def parse_house():
+def _parse_house_page(url: str, cutoff: datetime):
     """
-    Scrape the House archive for MP4 video URLs within the last DAYS_BACK days.
-
-    Strategy (based on current site behavior):
-    - Load the main archive page (HOUSE_URL).
-    - All videos are listed directly in this page's HTML.
-    - Find <a href="...mp4"> links.
-    - Try to find a nearby date (e.g., in the same row or a preceding
-      <span class="date"> element).
-    - Filter to videos whose date >= cutoff (DAYS_BACK).
+    Parse a single House archive page and extract video items.
+    Returns a list of video items found on that page.
     """
-    r = requests.get(HOUSE_URL, timeout=30)
+    r = requests.get(url, timeout=30)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
 
-    cutoff = _cutoff()
     items = []
     seen_urls = set()
 
-    # All MP4 links are on the main page.
+    # All MP4 links are on the page.
     for vid in soup.select("a[href*='.mp4']"):
         raw_url = vid.get("href")
-        url = _normalize_house_url(raw_url)
-        if not url or url in seen_urls:
+        url_normalized = _normalize_house_url(raw_url)
+        if not url_normalized or url_normalized in seen_urls:
             continue
 
         # Default to "now" if we can't parse a date.
@@ -104,16 +96,60 @@ def parse_house():
                 except ValueError:
                     continue
 
+        # Only include videos within the cutoff window
         if date >= cutoff:
             items.append(
                 {
                     "source": "house",
-                    "url": url,
+                    "url": url_normalized,
                     "raw_url": raw_url,
                     "category": category,
                     "date": date,
                 }
             )
-            seen_urls.add(url)
+            seen_urls.add(url_normalized)
 
     return items
+
+
+def parse_house():
+    """
+    Scrape the House archive for MP4 video URLs within the last DAYS_BACK days.
+
+    Strategy:
+    - The page by default only shows videos from the current year.
+    - If DAYS_BACK spans into previous years, we fetch multiple years using
+      the &Year=YYYY query parameter.
+    - Parse each year's page and combine results.
+    - Filter to videos whose date >= cutoff (DAYS_BACK).
+    """
+    cutoff = _cutoff()
+    cutoff_year = cutoff.year
+    current_year = datetime.utcnow().year
+
+    # Determine which years we need to fetch
+    years_to_fetch = list(range(cutoff_year, current_year + 1))
+
+    all_items = []
+    seen_urls = set()
+
+    # Fetch each year's page
+    for year in years_to_fetch:
+        # Build URL with Year parameter
+        if "?" in HOUSE_URL:
+            year_url = f"{HOUSE_URL}&Year={year}"
+        else:
+            year_url = f"{HOUSE_URL}?Year={year}"
+
+        try:
+            year_items = _parse_house_page(year_url, cutoff)
+            # Deduplicate across years (same video might appear in multiple years)
+            for item in year_items:
+                if item["url"] not in seen_urls:
+                    all_items.append(item)
+                    seen_urls.add(item["url"])
+        except Exception as e:
+            # Log but continue with other years
+            print(f"Warning: Failed to fetch year {year}: {e}")
+
+    return all_items
