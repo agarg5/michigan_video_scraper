@@ -9,7 +9,7 @@ from app.db import SessionLocal, Video, init_db
 from app.config import DATA_DIR
 
 # Hardcoded test video
-TEST_VIDEO_URL = "https://house.mi.gov/VideoArchivePlayer?video=CORR-030625.mp4"
+TEST_VIDEO_URL = "https://www.house.mi.gov/ArchiveVideoFiles/CORR-030625.mp4"
 SOURCE = "house"
 
 
@@ -48,6 +48,10 @@ def run_test():
     db.commit()
     db.close()
     print("Saved to database. Test complete!")
+
+    # Delete temp files to save space
+    os.remove(mp4_path)
+    os.remove(mp3_path)
 
 
 if __name__ == "__main__":

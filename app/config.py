@@ -1,4 +1,10 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load project-level environment variables from .env at repo root
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(PROJECT_ROOT / ".env")
 
 HOUSE_URL = "https://house.mi.gov/VideoArchive"
 SENATE_URL = "https://cloud.castus.tv/vod/misenate/?page=ALL"

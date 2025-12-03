@@ -1,33 +1,43 @@
+# app/main.py
 import os
 from hashlib import sha256
 from datetime import datetime, timedelta
-from app.fetch import parse_house, parse_senate
+from concurrent.futures import ThreadPoolExecutor
+
+from app.fetch import parse_house
 from app.transcribe import transcribe
 from app.download import download_mp4, convert_to_mp3
 from app.db import SessionLocal, Video, init_db
 from app.config import DAYS_BACK, DATA_DIR
 
+FAILED_LOG = os.path.join(DATA_DIR, "failed_videos.csv")
+MAX_WORKERS = 4  # adjust based on system/API limits
 
-def run():
-    init_db()
-    os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
-    items = parse_house() + parse_senate()
-    cutoff = datetime.utcnow() - timedelta(days=DAYS_BACK)
 
+def log_failure(video_url, error):
+    """Append a failed video to CSV for persistence."""
+    with open(FAILED_LOG, "a") as f:
+        f.write(f"{datetime.utcnow().isoformat()},{video_url},{error}\n")
+
+
+def process_video(item):
+    """Download, convert, transcribe, store; retry once if fails."""
+    video_id = sha256(item["url"].encode()).hexdigest()
+    mp4_path = os.path.join(DATA_DIR, f"{video_id}.mp4")
+    mp3_path = os.path.join(DATA_DIR, f"{video_id}.mp3")
     db = SessionLocal()
 
-    for item in items:
-        video_id = sha256(item["url"].encode()).hexdigest()
-
-        existing = db.query(Video).filter_by(id=video_id).first()
-        if existing:
-            continue
-
-        mp4_path = os.path.join(DATA_DIR, f"{video_id}.mp4")
-        mp3_path = os.path.join(DATA_DIR, f"{video_id}.mp3")
-
+    try_count = 0
+    while try_count < 2:
+        try_count += 1
         try:
+            # Skip if already processed
+            existing = db.query(Video).filter_by(id=video_id).first()
+            if existing:
+                return
+
             download_mp4(item["url"], mp4_path)
             convert_to_mp3(mp4_path, mp3_path)
             text = transcribe(mp3_path)
@@ -43,11 +53,33 @@ def run():
             db.add(v)
             db.commit()
 
+            # Cleanup temp files
+            os.remove(mp4_path)
+            os.remove(mp3_path)
+            return  # success
+
         except Exception as e:
-            print("Error:", e)
             db.rollback()
+            if try_count >= 2:
+                print(f"Failed permanently: {item['url']} - {e}")
+                log_failure(item["url"], str(e))
+            else:
+                print(f"Retrying {item['url']} due to error: {e}")
 
     db.close()
+
+
+def run():
+    init_db()
+    items = parse_house()
+    cutoff = datetime.utcnow() - timedelta(days=DAYS_BACK)
+
+    # Filter old videos
+    items = [i for i in items if i["date"] >= cutoff]
+
+    # Parallel processing
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        executor.map(process_video, items)
 
 
 if __name__ == "__main__":
