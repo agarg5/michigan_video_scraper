@@ -1,7 +1,8 @@
 requests
 beautifulsoup4
 python-dotenv
-boto3
+sqlalchemy
+psycopg2-binary
 openai
-schedule
 pydub
+schedule

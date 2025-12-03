@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime
 
 def parse_house():
     r = requests.get("https://house.mi.gov/VideoArchive", timeout=30)
@@ -9,8 +9,7 @@ def parse_house():
     items = []
     for link in soup.select("a[href*='.mp4']"):
         url = link["href"]
-        date = datetime.today()
-        items.append({"source": "house", "url": url, "date": date.isoformat()})
+        items.append({"source": "house", "url": url, "date": datetime.utcnow()})
     return items
 
 def parse_senate():
@@ -20,6 +19,5 @@ def parse_senate():
     items = []
     for tag in soup.select("a[href*='.mp4']"):
         url = tag["href"]
-        date = datetime.today()
-        items.append({"source": "senate", "url": url, "date": date.isoformat()})
+        items.append({"source": "senate", "url": url, "date": datetime.utcnow()})
     return items
