@@ -41,6 +41,7 @@ dataclasses-json==0.5.8
 datadog==0.44.0
 decorator==4.4.2
 defusedxml==0.6.0
+distro==1.9.0
 dj-database-url==0.5.0
 Django==3.2.16
 django-cors-headers==3.5.0
@@ -79,6 +80,7 @@ ipython-genutils==0.2.0
 ipywidgets==7.5.1
 jedi==0.17.2
 Jinja2==3.1.2
+jiter==0.12.0
 jmespath==0.10.0
 joblib==0.16.0
 json5==0.9.5
@@ -119,7 +121,7 @@ numexpr==2.8.4
 numpy==1.24.2
 oauthlib==3.1.0
 ollama==0.6.1
-openai==0.27.8
+openai==2.8.1
 openapi-schema-pydantic==1.2.4
 openpyxl==3.1.0
 opt-einsum==3.3.0
