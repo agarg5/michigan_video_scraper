@@ -7,6 +7,7 @@ from app.download import download_mp4, convert_to_mp3
 from app.db import SessionLocal, Video, init_db
 from app.config import DAYS_BACK, DATA_DIR
 
+
 def run():
     init_db()
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -47,6 +48,7 @@ def run():
             db.rollback()
 
     db.close()
+
 
 if __name__ == "__main__":
     run()
