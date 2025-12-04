@@ -4,7 +4,7 @@ nixPkgs = ["python311", "pip"]
 [phases.install]
 cmds = [
   "pip install --upgrade pip",
-  "pip install setuptools wheel",
+  "pip install setuptools wheel cython",
   "pip install -r requirements.txt"
 ]
 
