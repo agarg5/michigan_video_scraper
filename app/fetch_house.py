@@ -153,3 +153,4 @@ def parse_house():
             print(f"Warning: Failed to fetch year {year}: {e}")
 
     return all_items
+

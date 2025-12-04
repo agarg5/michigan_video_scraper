@@ -1,4 +1,4 @@
-from app.fetch import parse_house
+from app.fetch_house import parse_house
 
 
 def summarize(label, items):
@@ -25,3 +25,4 @@ if __name__ == "__main__":
         raw = v.get("raw_url", v["url"])
         norm = v["url"]
         print(f"{i:3}: {raw}  ->  {norm}")
+

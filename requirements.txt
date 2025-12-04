@@ -1,6 +1,7 @@
 # Build tools - required for package installation
-setuptools>=65.0.0
-wheel>=0.38.0
+# These must be installed first to ensure build backend works
+setuptools>=75.0.0
+wheel>=0.43.0
 
 absl-py==0.10.0
 aiohttp==3.8.3

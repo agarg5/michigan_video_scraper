@@ -4,9 +4,11 @@ from hashlib import sha256
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
-from app.fetch import parse_house
+from app.fetch_house import parse_house
+from app.fetch_senate import parse_senate
 from app.transcribe import transcribe
 from app.download import download_mp4, convert_to_mp3
+from app.m3u8 import m3u8_to_wav
 from app.db import SessionLocal, Video, init_db
 from app.config import DAYS_BACK, DATA_DIR
 
@@ -25,8 +27,6 @@ def log_failure(video_url, error):
 def process_video(item):
     """Download, convert, transcribe, store; retry once if fails."""
     video_id = sha256(item["url"].encode()).hexdigest()
-    mp4_path = os.path.join(DATA_DIR, f"{video_id}.mp4")
-    mp3_path = os.path.join(DATA_DIR, f"{video_id}.mp3")
     db = SessionLocal()
 
     try_count = 0
@@ -46,9 +46,32 @@ def process_video(item):
             base_label = f"{item['source'].capitalize()} {date_str}"
             name = f"{category} ({base_label})" if category else base_label
 
-            download_mp4(item["url"], mp4_path)
-            convert_to_mp3(mp4_path, mp3_path)
-            text = transcribe(mp3_path)
+            # Handle m3u8 files (Senate) vs mp4 files (House)
+            is_m3u8 = item["url"].endswith(".m3u8")
+
+            if is_m3u8:
+                # Convert m3u8 to wav, then transcribe
+                wav_path = m3u8_to_wav(item["url"])
+                try:
+                    text = transcribe(wav_path)
+                finally:
+                    # Cleanup wav file
+                    if os.path.exists(wav_path):
+                        os.remove(wav_path)
+            else:
+                # Download mp4, convert to mp3, then transcribe
+                mp4_path = os.path.join(DATA_DIR, f"{video_id}.mp4")
+                mp3_path = os.path.join(DATA_DIR, f"{video_id}.mp3")
+                try:
+                    download_mp4(item["url"], mp4_path)
+                    convert_to_mp3(mp4_path, mp3_path)
+                    text = transcribe(mp3_path)
+                finally:
+                    # Cleanup temp files
+                    if os.path.exists(mp4_path):
+                        os.remove(mp4_path)
+                    if os.path.exists(mp3_path):
+                        os.remove(mp3_path)
 
             v = Video(
                 id=video_id,
@@ -62,9 +85,6 @@ def process_video(item):
             db.add(v)
             db.commit()
 
-            # Cleanup temp files
-            os.remove(mp4_path)
-            os.remove(mp3_path)
             return  # success
 
         except Exception as e:
@@ -80,11 +100,15 @@ def process_video(item):
 
 def run():
     init_db()
-    items = parse_house()
     cutoff = datetime.utcnow() - timedelta(days=DAYS_BACK)
 
-    # Filter old videos
-    items = [i for i in items if i["date"] >= cutoff]
+    # Fetch videos from both House and Senate
+    house_items = parse_house()
+    senate_items = parse_senate()
+
+    # Combine and filter old videos
+    all_items = house_items + senate_items
+    items = [i for i in all_items if i["date"] >= cutoff]
 
     # Parallel processing
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
