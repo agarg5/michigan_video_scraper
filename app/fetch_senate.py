@@ -1,11 +1,13 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from dateutil import parser as date_parser
 
 from app.config import SENATE_URL, DAYS_BACK
 
 
 def _cutoff() -> datetime:
-    return datetime.utcnow() - timedelta(days=DAYS_BACK)
+    # Return timezone-aware UTC datetime to match parsed dates
+    return datetime.now(timezone.utc) - timedelta(days=DAYS_BACK)
 
 
 def _construct_senate_video_url(video_id: str) -> str:
@@ -51,33 +53,11 @@ def _parse_senate_response(data, cutoff: datetime):
         date_str = item.get("original_date") or item.get("date")
         if date_str:
             try:
-                if isinstance(date_str, str):
-                    # Parse ISO format: "2025-12-04T14:59:25.209Z"
-                    # Remove milliseconds if present
-                    if "." in date_str:
-                        # Split on '.' and take the part before it, then add Z back if it was there
-                        parts = date_str.split(".")
-                        date_str = parts[0]
-                        if len(parts) > 1 and parts[1].endswith("Z"):
-                            date_str += "Z"
-                        elif len(parts) > 1 and "+" in parts[1]:
-                            date_str += "+" + parts[1].split("+")[1]
-
-                    # Parse ISO format datetime
-                    # Python's fromisoformat doesn't handle Z directly, need to replace with +00:00
-                    if date_str.endswith("Z"):
-                        date_str = date_str[:-1] + "+00:00"
-
-                    date = datetime.fromisoformat(date_str)
-            except (ValueError, AttributeError):
-                # If parsing fails, try alternative formats
-                try:
-                    # Try just the date part
-                    date = datetime.strptime(
-                        date_str.split("T")[0], "%Y-%m-%d")
-                except ValueError:
-                    # Keep default (utcnow)
-                    pass
+                # dateutil.parser.parse handles ISO format with Z, milliseconds, etc. automatically
+                date = date_parser.parse(date_str)
+            except (ValueError, TypeError, AttributeError):
+                # If parsing fails, keep default (utcnow)
+                pass
 
         # Extract category/name from metadata.filename
         metadata = item.get("metadata", {})
