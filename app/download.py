@@ -7,7 +7,7 @@ PREVIEW_MODE = os.getenv("SCRAPER_PREVIEW_MODE", "").lower() == "true"
 
 def download_video(url: str, output_path: str) -> None:
     """
-    If PREVIEW_MODE=true, download only the first 60 seconds.
+    If PREVIEW_MODE=true, download only the first 30 seconds.
     Otherwise, download the full video.
     """
     if PREVIEW_MODE:
@@ -16,7 +16,7 @@ def download_video(url: str, output_path: str) -> None:
         download_full(url, output_path)
 
 
-def download_preview(url: str, output_path: str, duration: int = 60):
+def download_preview(url: str, output_path: str, duration: int = 30):
     """
     Stream and save only the first `duration` seconds of the video.
     Works for both MP4 and M3U8.
@@ -24,12 +24,15 @@ def download_preview(url: str, output_path: str, duration: int = 60):
     print(f"[preview] downloading first {duration}s from {url}")
     cmd = [
         "ffmpeg", "-y",
-        "-ss", "0",
         "-i", url,
-        "-t", str(duration),
-        "-c", "copy",
-        output_path
+        "-ss", "0",
+        "-t", "30",
+        "-vn",
+        "-acodec", "libmp3lame",
+        "-b:a", "192k",
+        output_path,
     ]
+
     subprocess.run(cmd, stdout=subprocess.PIPE,
                    stderr=subprocess.PIPE, check=True)
 
