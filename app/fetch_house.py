@@ -1,13 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse, parse_qs
 
 from app.config import HOUSE_URL, DAYS_BACK
 
 
 def _cutoff() -> datetime:
-    return datetime.utcnow() - timedelta(days=DAYS_BACK)
+    return datetime.now(timezone.utc) - timedelta(days=DAYS_BACK)
 
 
 def _normalize_house_url(raw: str) -> str:
@@ -62,7 +62,7 @@ def _parse_house_page(url: str, cutoff: datetime):
             continue
 
         # Default to "now" if we can't parse a date.
-        date = datetime.utcnow()
+        date = datetime.now(timezone.utc)
 
         # Heuristic 1: a preceding span.date
         date_tag = vid.find_previous("span", class_="date")
@@ -91,7 +91,9 @@ def _parse_house_page(url: str, cutoff: datetime):
             text = date_tag.get_text(strip=True)
             for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
                 try:
-                    date = datetime.strptime(text, fmt)
+                    # Parse as naive datetime, then make it timezone-aware (UTC)
+                    date = datetime.strptime(
+                        text, fmt).replace(tzinfo=timezone.utc)
                     break
                 except ValueError:
                     continue
@@ -153,4 +155,3 @@ def parse_house():
             print(f"Warning: Failed to fetch year {year}: {e}")
 
     return all_items
-

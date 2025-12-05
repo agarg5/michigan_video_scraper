@@ -1,7 +1,7 @@
 # app/main.py
 import os
 from hashlib import sha256
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 
 from app.fetch_house import parse_house
@@ -100,7 +100,7 @@ def process_video(item):
 
 def run():
     init_db()
-    cutoff = datetime.utcnow() - timedelta(days=DAYS_BACK)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS_BACK)
 
     # Fetch videos from both House and Senate
     house_items = parse_house()
