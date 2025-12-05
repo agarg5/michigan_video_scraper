@@ -7,8 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from app.fetch_house import parse_house
 from app.fetch_senate import parse_senate
 from app.transcribe import transcribe
-from app.download import download_mp4, convert_to_mp3
-from app.m3u8 import m3u8_to_wav
+from app.download import download_video, convert_to_mp3
+from app.download import download_video
 from app.db import SessionLocal, Video, init_db
 from app.config import DAYS_BACK, DATA_DIR
 
@@ -51,7 +51,7 @@ def process_video(item):
 
             if is_m3u8:
                 # Convert m3u8 to wav, then transcribe
-                wav_path = m3u8_to_wav(item["url"])
+                wav_path = download_video(item["url"])
                 try:
                     text = transcribe(wav_path)
                 finally:
@@ -63,7 +63,7 @@ def process_video(item):
                 mp4_path = os.path.join(DATA_DIR, f"{video_id}.mp4")
                 mp3_path = os.path.join(DATA_DIR, f"{video_id}.mp3")
                 try:
-                    download_mp4(item["url"], mp4_path)
+                    download_video(item["url"], mp4_path)
                     convert_to_mp3(mp4_path, mp3_path)
                     text = transcribe(mp3_path)
                 finally:

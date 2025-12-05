@@ -11,5 +11,6 @@ SENATE_URL = "https://2kbyogxrg4.execute-api.us-west-2.amazonaws.com/61b3adc8124
 
 TRANSCRIPTION_MODEL = os.getenv("TRANSCRIPTION_MODEL", "gpt-4o-transcribe")
 DATABASE_URL = os.getenv("DATABASE_URL")
+SCRAPER_PREVIEW_MODE = os.getenv("SCRAPER_PREVIEW_MODE")
 DAYS_BACK = int(os.getenv("DAYS_BACK", "60"))
 DATA_DIR = "data"
