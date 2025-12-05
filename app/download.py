@@ -7,7 +7,7 @@ PREVIEW_MODE = os.getenv("SCRAPER_PREVIEW_MODE", "").lower() == "true"
 
 def download_video(url: str, output_path: str) -> None:
     """
-    If PREVIEW_MODE=true, download only the first 30 seconds.
+    If PREVIEW_MODE=true, download only the first 60 seconds.
     Otherwise, download the full video.
     """
     if PREVIEW_MODE:
@@ -16,7 +16,7 @@ def download_video(url: str, output_path: str) -> None:
         download_full(url, output_path)
 
 
-def download_preview(url: str, output_path: str, duration: int = 30):
+def download_preview(url: str, output_path: str, duration: int = 60):
     """
     Stream and save only the first `duration` seconds of the video.
     Works for both MP4 and M3U8.

@@ -61,42 +61,19 @@ def _parse_house_page(url: str, cutoff: datetime):
         if not url_normalized or url_normalized in seen_urls:
             continue
 
-        # Default to "now" if we can't parse a date.
-        date = datetime.now(timezone.utc)
+        date_tag = vid
 
-        # Heuristic 1: a preceding span.date
-        date_tag = vid.find_previous("span", class_="date")
-
-        category = None
-
-        # Heuristic 2: a sibling/parent cell with date-like text
-        if not date_tag:
-            parent_row = vid.find_parent("tr")
-            if parent_row:
-                cells = parent_row.find_all(["td", "th"])
-                # Look for any cell that might contain a date.
-                for cell in cells:
-                    text = cell.get_text(strip=True)
-                    if any(ch.isdigit() for ch in text):
-                        date_tag = cell
-                        break
-                # Use the first non-empty, non-date cell as a simple "category"
-                for cell in cells:
-                    text = cell.get_text(strip=True)
-                    if text and cell is not date_tag:
-                        category = text
-                        break
+        category = raw_url[-16:-11]
 
         if date_tag:
-            text = date_tag.get_text(strip=True)
-            for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
-                try:
-                    # Parse as naive datetime, then make it timezone-aware (UTC)
-                    date = datetime.strptime(
-                        text, fmt).replace(tzinfo=timezone.utc)
-                    break
-                except ValueError:
-                    continue
+            text = date_tag.next.strip()  # example 'Thursday, February 20, 2025'
+            fmt = "%A, %B %d, %Y"
+            try:
+                # Parse as naive datetime, then make it timezone-aware (UTC)
+                date = datetime.strptime(
+                    text, fmt).replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
 
         # Only include videos within the cutoff window
         if date >= cutoff:

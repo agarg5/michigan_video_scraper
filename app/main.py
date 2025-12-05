@@ -51,7 +51,9 @@ def process_video(item):
 
             if is_m3u8:
                 # Convert m3u8 to wav, then transcribe
-                wav_path = download_video(item["url"])
+                wav_path = os.path.join(DATA_DIR, f"{video_id}.mp3")
+                download_video(item["url"], wav_path)
+
                 try:
                     text = transcribe(wav_path)
                 finally:
@@ -100,7 +102,6 @@ def process_video(item):
 
 def run():
     init_db()
-    cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS_BACK)
 
     # Fetch videos from both House and Senate
     house_items = parse_house()
@@ -108,11 +109,10 @@ def run():
 
     # Combine and filter old videos
     all_items = house_items + senate_items
-    items = [i for i in all_items if i["date"] >= cutoff]
 
     # Parallel processing
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        executor.map(process_video, items)
+        executor.map(process_video, all_items)
 
 
 if __name__ == "__main__":

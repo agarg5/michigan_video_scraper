@@ -13,16 +13,10 @@ def summarize(label, items):
     for v in items[:10]:
         raw = v.get("raw_url", v["url"])
         norm = v["url"]
-        print(f"   - {v['source']} {v['date'].isoformat()} {raw}  ->  {norm}")
+        # print(f"   - {v['source']} {v['date'].isoformat()} {raw}  ->  {norm}")
 
 
 if __name__ == "__main__":
     senate_videos = parse_senate()
 
     summarize("Senate", senate_videos)
-    print("\nFull Senate URL list (raw -> normalized):")
-    for i, v in enumerate(senate_videos, start=1):
-        raw = v.get("raw_url", v["url"])
-        norm = v["url"]
-        print(f"{i:3}: {raw}  ->  {norm}")
-
